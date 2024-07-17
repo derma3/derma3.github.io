@@ -222,8 +222,8 @@
                                 <td><span class="status delivered">Delivered</span></td> -->
                             </tr>
                             
-                            <tr><a href="https://docs.google.com/spreadsheets/d/1UP-thXe2O8u91bt4lbgN42wHx3colIpgsWhYK1Qxh3I/copy" target="_blank">
-                                <td><ion-icon name="copy-outline"></ion-icon> สนใจทำสำเนาไฟล์ไปใช้งานคลิกที่นี่ (ฟรี) รหัสผ่านแอดมิน 12345</td></a>
+                            <tr>
+                                <td onclick="copyproject()"><ion-icon name="copy-outline"></ion-icon> สนใจทำสำเนาไฟล์ไปใช้งานคลิกที่นี่ (ฟรี) รหัสผ่านแอดมิน 12345</td>
                                 <!-- <td>$1200</td>
                                 <td>Paid</td>
                                 <td><span class="status delivered">Delivered</span></td> -->
@@ -314,6 +314,11 @@
 
     <!-- =========== Scripts =========  -->
     <script src="main.js"></script>
+    <script>
+        function copyproject(){
+            window.open('https://docs.google.com/spreadsheets/d/1UP-thXe2O8u91bt4lbgN42wHx3colIpgsWhYK1Qxh3I/copy','_blank');
+        }
+    </script>
 
     <!-- ====== ionicons ======= -->
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
