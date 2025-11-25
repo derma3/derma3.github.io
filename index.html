@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรับบริจาคออนไลน์</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #0d6efd; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; display: flex; flex-direction: column; min-height: 100vh; }
+        .main-content { flex: 1; }
+        .bg-theme { background-color: var(--primary-color) !important; color: white; }
+        .text-theme { color: var(--primary-color) !important; }
+        .btn-theme { background-color: var(--primary-color); color: white; border: none; }
+        .big-counter { font-size: 3.5rem; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .card-shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; border-radius: 12px; }
+        .footer-link { text-decoration: none; color: inherit; font-weight: bold; }
+        .footer-link:hover { color: var(--primary-color); text-decoration: underline; }
+        #landing-page, #org-dashboard, #super-admin-page { display: none; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING SPINNER -->
+    <div id="loader" class="d-flex justify-content-center align-items-center vh-100 bg-white position-fixed w-100 start-0 top-0" style="z-index:9999; opacity: 0.9;">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+            <div class="mt-2 fw-bold text-primary">กำลังทำงาน...</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 1. LANDING PAGE -->
+        <div id="landing-page" class="container mt-5">
+            <div class="text-center">
+                <h1 class="mb-4 text-primary"><i class="fas fa-donate"></i> ศูนย์รวมการรับบริจาค</h1>
+                <div class="card card-shadow p-4 mx-auto" style="max-width: 500px;">
+                    <h4>สร้างองค์กรใหม่</h4>
+                    <form id="registerForm">
+                        <div class="mb-2"><input type="text" class="form-control" id="regPath" placeholder="ชื่อลิงค์ (อังกฤษ)" required></div>
+                        <div class="mb-2"><input type="text" class="form-control" id="regName" placeholder="ชื่อองค์กร" required></div>
+                        <div class="mb-2"><input type="password" class="form-control" id="regPass" placeholder="รหัส Admin" required></div>
+                        <button type="submit" class="btn btn-primary w-100">ลงทะเบียน</button>
+                    </form>
+                    <hr>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showSuperLogin()">เข้าสู่ระบบผู้ดูแลระบบ (Super Admin)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. SUPER ADMIN PAGE -->
+        <div id="super-admin-page" class="container mt-4">
+            <h3><i class="fas fa-user-shield"></i> จัดการระบบ (Super Admin)</h3>
+            <button class="btn btn-secondary mb-3" onclick="logout()">ออกจากระบบ</button>
+            <div class="table-responsive bg-white p-3 card-shadow">
+                <table class="table table-hover">
+                    <thead><tr><th>URL</th><th>ชื่อองค์กร</th><th>รหัสผ่าน</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <tbody id="superAdminTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. ORG DASHBOARD -->
+        <div id="org-dashboard">
+            <nav class="navbar navbar-expand-lg bg-theme shadow-sm">
+                <div class="container">
+                    <a class="navbar-brand fw-bold text-white" href="#" id="navOrgName">Org Name</a>
+                    <div>
+                        <span id="userInfo" class="text-white me-2 d-none"></span>
+                        <button class="btn btn-light btn-sm no-print" id="btnLoginBtn" onclick="showLogin()">เข้าสู่ระบบ</button>
+                        
+                        <!-- Admin Menu -->
+                        <div class="btn-group no-print d-none" id="adminMenu">
+                            <button type="button" class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">เมนูจัดการ</button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="showSettingsModal()">ตั้งค่าองค์กร</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showMembersModal()">จัดการสมาชิก</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="logout()">ออกจากระบบ</a></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Member Logout Button -->
+                        <button class="btn btn-outline-light btn-sm no-print d-none" id="btnLogoutMember" onclick="logout()">ออกจากระบบ</button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container mt-4">
+                <div class="text-center mb-4">
+                    <h5 class="text-muted">ยอดบริจาคสะสม</h5>
+                    <div class="big-counter text-theme" id="totalAmount">0.00</div>
+                    <small>บาท</small>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-8 mx-auto">
+                        <div class="alert alert-light border text-center shadow-sm">
+                            <h6 class="fw-bold"><i class="fas fa-qrcode"></i> ช่องทางร่วมทำบุญ</h6>
+                            <p id="paymentInfoDisplay" class="mb-0 text-pre-wrap small">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Donation Form -->
+                <div id="recordArea" class="card card-shadow mb-4 no-print d-none">
+                    <div class="card-body">
+                        <h6 class="card-title text-primary"><i class="fas fa-pen"></i> บันทึกยอดบริจาค <span id="recordByBadge" class="badge bg-secondary"></span></h6>
+                        <form id="donationForm" class="row g-2">
+                            <div class="col-md-3"><input type="text" class="form-control" id="dName" placeholder="ชื่อผู้บริจาค" required></div>
+                            <div class="col-md-3"><input type="number" class="form-control" id="dAmount" placeholder="จำนวนเงิน" required></div>
+                            <div class="col-md-3"><input type="text" class="form-control" id="dNote" placeholder="หมายเหตุ"></div>
+                            <div class="col-md-3"><button type="submit" class="btn btn-success w-100">บันทึก</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Donation Table -->
+                <div class="card card-shadow" id="tableCard">
+                    <div class="card-header bg-white fw-bold"><i class="fas fa-list"></i> รายการบริจาคล่าสุด</div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead><tr><th>วันที่</th><th>ชื่อ</th><th class="text-end">ยอดเงิน</th><th>หมายเหตุ</th><th class="admin-only d-none">ลบ</th></tr></thead>
+                            <tbody id="donationTableBody"></tbody>
+                        </table>
+                        <div id="hiddenMsg" class="p-3 text-center text-muted d-none"><i class="fas fa-lock"></i> รายการถูกซ่อนโดยผู้ดูแล</div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 mb-3 text-muted small"><span id="addressDisplay"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark text-white text-center py-3 mt-auto no-print">
+        <div class="container">
+            <small>
+                &copy; 2023 ระบบบริจาคออนไลน์ | 
+                จัดทำโดย: <a href="https://t-abdul.blogspot.com" target="_blank" class="footer-link text-warning">ครูอับดุลเลาะ</a>
+            </small>
+        </div>
+    </footer>
+
+    <!-- MODALS -->
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">เข้าสู่ระบบ</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <select class="form-select mb-2" id="loginRole" onchange="toggleLoginInput()">
+            <option value="admin">แอดมินองค์กร</option>
+            <option value="member">สมาชิก/เจ้าหน้าที่</option>
+        </select>
+        <input type="text" id="loginUser" class="form-control mb-2 d-none" placeholder="ชื่อผู้ใช้">
+        <input type="password" id="loginPass" class="form-control" placeholder="รหัสผ่าน">
+    </div><div class="modal-footer"><button class="btn btn-primary w-100" onclick="processLogin()">ยืนยัน</button></div></div></div></div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>ตั้งค่าองค์กร</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <form id="settingForm">
+            <label>เปลี่ยนรหัส Admin (ว่างไว้ถ้าไม่เปลี่ยน)</label><input type="password" id="setPass" class="form-control mb-2">
+            <label>สีธีม</label><input type="color" id="setColor" class="form-control form-control-color w-100 mb-2">
+            <label>ที่อยู่/ท้ายกระดาษ</label><input type="text" id="setAddress" class="form-control mb-2">
+            <label>ข้อมูลการโอนเงิน</label><textarea id="setPay" class="form-control mb-2" rows="3"></textarea>
+            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="setShowTable" checked><label class="form-check-label">แสดงตารางบริจาคให้คนทั่วไปเห็น</label></div>
+        </form>
+    </div><div class="modal-footer"><button class="btn btn-primary" onclick="saveSettings()">บันทึก</button></div></div></div></div>
+
+    <!-- Members Modal -->
+    <div class="modal fade" id="membersModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>จัดการสมาชิก</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <div class="input-group mb-3">
+            <input type="text" id="newMemUser" class="form-control" placeholder="Username">
+            <input type="password" id="newMemPass" class="form-control" placeholder="Password">
+            <input type="text" id="newMemName" class="form-control" placeholder="ชื่อสกุล">
+            <button class="btn btn-success" onclick="addMember()"><i class="fas fa-plus"></i></button>
+        </div>
+        <ul class="list-group" id="memberList"></ul>
+    </div></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // *** แก้ URL APPS SCRIPT ของคุณที่นี่ ***
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymHW_vijiYj1mpa5OcpKLQrD5xpBHEXLTavAsqRkYUtRQ_WFIqZr5qZ8zIvWk5WAuO/exec";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const orgParam = urlParams.get('p');
+        
+        // Session Key: สร้างคีย์เฉพาะขององค์กรนั้นๆ เพื่อไม่ให้ login ข้ามองค์กร
+        const SESSION_KEY = 'donation_user_' + (orgParam || 'main');
+
+        let currentUser = { role: 'guest', token: null, name: '' };
+        let orgData = {};
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Check Session
+            checkSession();
+
+            // 2. Load Page
+            if (orgParam) {
+                loadOrgDashboard(orgParam);
+            } else {
+                // ถ้า login super admin ค้างไว้
+                if(currentUser.role === 'super_admin') {
+                     document.getElementById('super-admin-page').style.display = 'block';
+                     document.getElementById('loader').classList.add('d-none');
+                     loadAllOrgs();
+                } else {
+                    document.getElementById('loader').classList.add('d-none');
+                    document.getElementById('landing-page').style.display = 'block';
+                }
+            }
+            
+            // Preview URL Input
+            const regPath = document.getElementById('regPath');
+            if(regPath) {
+                regPath.addEventListener('input', (e) => e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, ''));
+            }
+        });
+
+        // --- CORE FUNCTIONS ---
+
+        function checkSession() {
+            const stored = sessionStorage.getItem(SESSION_KEY);
+            if (stored) {
+                try {
+                    currentUser = JSON.parse(stored);
+                } catch(e) {
+                    console.error('Session Parse Error');
+                    sessionStorage.removeItem(SESSION_KEY);
+                }
+            }
+        }
+
+        async function loadOrgDashboard(path) {
+            // เรียกข้อมูลองค์กร (useLoader = true ครั้งแรก)
+            const res = await callAPI({ action: 'getOrgData', orgPath: path }, true);
+            
+            if(res.status === 'success') {
+                orgData = res.data;
+                applyTheme(orgData);
+                document.getElementById('landing-page').style.display = 'none';
+                document.getElementById('super-admin-page').style.display = 'none';
+                document.getElementById('org-dashboard').style.display = 'block';
+				checkShowTable();
+                
+                // หากมี Session ค้างอยู่ ให้ปรับ UI เลย
+                if(currentUser.token) updateUIForUser();
+
+                // ดึงข้อมูลบริจาค (polling)
+                fetchDonations(); // ครั้งแรก
+                setInterval(fetchDonations, 30000); // ทุก 30 วิ (ไม่ต้องโชว์ loader)
+            } else {
+                Swal.fire('ข้อผิดพลาด', res.message, 'error').then(() => window.location.href = window.location.pathname);
+            }
+        }
+
+        //async function fetchDonations() {
+        //    // useLoader = false (ทำงานเบื้องหลัง)
+        //    const res = await callAPI({ action: 'getDonations', orgPath: orgParam, token: currentUser.token }, false);
+        //    
+        //    if(res.status === 'success') {
+        //        // Update Total Amount
+        //        document.getElementById('totalAmount').innerText = Number(res.total).toLocaleString('th-TH', {minimumFractionDigits: 2});
+        //        
+        //        // Update Table
+        //        const tbody = document.getElementById('donationTableBody');
+        //        tbody.innerHTML = '';
+        //        
+        //        if(res.isHidden) {
+        //            document.getElementById('hiddenMsg').classList.remove('d-none');
+        //        } else {
+        //            document.getElementById('hiddenMsg').classList.add('d-none');
+        //            res.data.forEach(d => {
+        //                tbody.innerHTML += `
+        //                    <tr>
+        //                        <td>${new Date(d.timestamp).toLocaleDateString('th-TH')}</td>
+        //                        <td>${d.donorName} <br><small class="text-muted" style="font-size:0.7rem">By: ${d.recordedBy}</small></td>
+        //                        <td class="text-end fw-bold">${Number(d.amount).toLocaleString()}</td>
+        //                        <td>${d.note}</td>
+        //                        <td class="admin-only ${currentUser.role === 'admin' ? '' : 'd-none'}">
+        //                            <button class="btn btn-sm btn-danger" onclick="deleteDonation(${d.id})"><i class="fas fa-trash"></i></button>
+        //                        </td>
+        //                    </tr>`;
+        //            });
+        //        }
+        //    }
+        //}
+		
+		async function fetchDonations() {
+            const res = await callAPI({ action: 'getDonations', orgPath: orgParam, token: currentUser.token }, false);
+            
+            if(res.status === 'success') {
+                document.getElementById('totalAmount').innerText = Number(res.total).toLocaleString('th-TH', {minimumFractionDigits: 2});
+                
+                const tbody = document.getElementById('donationTableBody');
+                tbody.innerHTML = '';
+                
+                if(res.isHidden) {
+                    document.getElementById('hiddenMsg').classList.remove('d-none');
+                } else {
+                    document.getElementById('hiddenMsg').classList.add('d-none');
+                    res.data.forEach(d => {
+                        // --- Logic เช็คสิทธิ์การแสดงปุ่มลบ ---
+                        let showDeleteBtn = false;
+                        if (currentUser.role === 'admin') {
+                            showDeleteBtn = true; // แอดมินลบได้หมด
+                        } else if (currentUser.role === 'member' && d.recordedBy === currentUser.name) {
+                            showDeleteBtn = true; // สมาชิกลบได้เฉพาะของตัวเอง
+                        }
+                        // ----------------------------------
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${new Date(d.timestamp).toLocaleDateString('th-TH')}</td>
+                                <td>${d.donorName} <br><small class="text-muted" style="font-size:0.7rem">By: ${d.recordedBy}</small></td>
+                                <td class="text-end fw-bold">${Number(d.amount).toLocaleString()}</td>
+                                <td>${d.note}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger ${showDeleteBtn ? '' : 'd-none'}" onclick="deleteDonation(${d.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+                }
+            }
+        }
+
+        // --- AUTHENTICATION ---
+        function showLogin() { 
+            new bootstrap.Modal(document.getElementById('loginModal')).show(); 
+            toggleLoginInput();
+        }
+
+        function toggleLoginInput() {
+            const role = document.getElementById('loginRole').value;
+            const userInp = document.getElementById('loginUser');
+            if(role === 'admin') {
+                userInp.classList.add('d-none');
+                userInp.value = 'admin'; 
+            } else {
+                userInp.classList.remove('d-none');
+                userInp.value = '';
+            }
+        }
+
+        async function processLogin() {
+            const role = document.getElementById('loginRole').value;
+            const user = role === 'admin' ? 'admin' : document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+
+            const res = await callAPI({ action: 'login', orgPath: orgParam, username: user, password: pass }, true);
+
+            if(res.status === 'success') {
+                currentUser = { role: res.role, token: res.token, name: res.name };
+                
+                // Save Session
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+
+                bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                updateUIForUser();
+                
+                Swal.fire('ยินดีต้อนรับ', `คุณ ${res.name}`, 'success');
+                fetchDonations(); // Refresh เพื่อแสดงข้อมูลที่อาจถูกซ่อน
+				checkShowTable();
+            } else {
+                Swal.fire('ผิดพลาด', res.message, 'error');
+            }
+        }
+
+        function updateUIForUser() {
+            document.getElementById('btnLoginBtn').classList.add('d-none');
+            document.getElementById('userInfo').innerText = `ผู้บันทึก: ${currentUser.name}`;
+            document.getElementById('userInfo').classList.remove('d-none');
+            document.getElementById('recordArea').classList.remove('d-none');
+            document.getElementById('recordByBadge').innerText = currentUser.name;
+
+            if(currentUser.role === 'admin') {
+                document.getElementById('adminMenu').classList.remove('d-none');
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
+                
+                // Pre-fill Data for Settings Modal
+                document.getElementById('setPass').value = '';
+                document.getElementById('setColor').value = orgData.themeColor || '#0d6efd';
+                document.getElementById('setAddress').value = orgData.address || '';
+                document.getElementById('setPay').value = orgData.paymentInfo || '';
+                document.getElementById('setShowTable').checked = (String(orgData.showTable) != 'FALSE');
+            } else {
+                document.getElementById('btnLogoutMember').classList.remove('d-none');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem(SESSION_KEY);
+            location.reload();
+        }
+
+        // --- ORG ADMIN FEATURES ---
+        
+        // ** FIX: เพิ่มฟังก์ชันนี้เพื่อให้กดเมนูแล้ว Modal ขึ้น **
+        function showSettingsModal() {
+             new bootstrap.Modal(document.getElementById('settingsModal')).show();
+        }
+
+        async function saveSettings() {
+            const payload = {
+                action: 'updateOrgSettings',
+                orgPath: orgParam,
+                newPass: document.getElementById('setPass').value,
+                themeColor: document.getElementById('setColor').value,
+                address: document.getElementById('setAddress').value,
+                paymentInfo: document.getElementById('setPay').value,
+                showTable: document.getElementById('setShowTable').checked ? 'TRUE' : 'FALSE'
+            };
+            
+            await callAPI(payload, true);
+            
+            // Update local UI immediately
+            orgData.themeColor = payload.themeColor;
+            applyTheme(orgData);
+            
+            bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+            Swal.fire('บันทึกสำเร็จ', '', 'success');
+        }
+
+        async function showMembersModal() {
+            new bootstrap.Modal(document.getElementById('membersModal')).show();
+            const res = await callAPI({ action: 'getMembers', orgPath: orgParam }, true);
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
+            res.data.forEach(m => {
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${m.username} (${m.name}) 
+                    <button class="btn btn-sm btn-danger" onclick="delMember(${m.id})"><i class="fas fa-times"></i></button>
+                </li>`;
+            });
+        }
+
+        async function addMember() {
+            const u = document.getElementById('newMemUser').value;
+            const p = document.getElementById('newMemPass').value;
+            const n = document.getElementById('newMemName').value;
+            if(!u || !p) return;
+            
+            await callAPI({ action: 'addMember', orgPath: orgParam, username: u, password: p, name: n }, true);
+            
+            // Clear inputs and refresh list
+            document.getElementById('newMemUser').value = '';
+            document.getElementById('newMemPass').value = '';
+            document.getElementById('newMemName').value = '';
+            
+            // Refresh Member List (Call logic again essentially)
+            const res = await callAPI({ action: 'getMembers', orgPath: orgParam }, false);
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
+            res.data.forEach(m => {
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${m.username} (${m.name}) 
+                    <button class="btn btn-sm btn-danger" onclick="delMember(${m.id})"><i class="fas fa-times"></i></button>
+                </li>`;
+            });
+        }
+
+        async function delMember(id) {
+            if(!confirm('ยืนยันลบสมาชิกนี้?')) return;
+            await callAPI({ action: 'deleteMember', orgPath: orgParam, rowId: id }, true);
+            // Refresh List
+            const res = await callAPI({ action: 'getMembers', orgPath: orgParam }, false);
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
+            res.data.forEach(m => {
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${m.username} (${m.name}) 
+                    <button class="btn btn-sm btn-danger" onclick="delMember(${m.id})"><i class="fas fa-times"></i></button>
+                </li>`;
+            });
+        }
+
+        // --- RECORD DONATION ---
+        document.getElementById('donationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await callAPI({
+                action: 'saveDonation', orgPath: orgParam,
+                donorName: document.getElementById('dName').value,
+                amount: document.getElementById('dAmount').value,
+                note: document.getElementById('dNote').value,
+                recordedBy: currentUser.name
+            }, true);
+            
+            document.getElementById('donationForm').reset();
+            fetchDonations(); // Refresh table
+            Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        });
+        
+        //async function deleteDonation(id) {
+        //    if(!confirm('ยืนยันลบรายการนี้?')) return;
+        //    await callAPI({ action: 'deleteDonation', orgPath: orgParam, rowId: id }, true);
+        //    fetchDonations();
+        //}
+		
+		async function deleteDonation(id) {
+            if(!confirm('ยืนยันลบรายการนี้?')) return;
+            
+            // ส่ง userRole และ userName ไปตรวจสอบที่ Backend
+            const res = await callAPI({ 
+                action: 'deleteDonation', 
+                orgPath: orgParam, 
+                rowId: id,
+                userRole: currentUser.role, 
+                userName: currentUser.name 
+            }, true);
+
+            if (res.status === 'success') {
+                fetchDonations();
+            } else {
+                Swal.fire('ทำรายการไม่ได้', res.message, 'error');
+            }
+        }
+
+        // --- SUPER ADMIN ---
+        async function showSuperLogin() {
+            const { value: password } = await Swal.fire({
+                title: 'Super Admin Login',
+                input: 'password',
+                inputPlaceholder: 'Password',
+                showCancelButton: true
+            });
+            if (password) {
+                const res = await callAPI({ action: 'loginSuper', password: password }, true);
+                if(res.status === 'success') {
+                    currentUser = { role: 'super_admin', token: res.token, name: 'SuperAdmin' };
+                    sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+                    
+                    document.getElementById('landing-page').style.display = 'none';
+                    document.getElementById('super-admin-page').style.display = 'block';
+                    loadAllOrgs();
+                } else {
+                    Swal.fire('รหัสผ่านไม่ถูกต้อง', '', 'error');
+                }
+            }
+        }
+
+        async function loadAllOrgs() {
+            const res = await callAPI({ action: 'getAllOrgs' }, true);
+            const tbody = document.getElementById('superAdminTable');
+            tbody.innerHTML = '';
+            res.data.forEach(org => {
+                const btnClass = org.status === 'Active' ? 'btn-success' : 'btn-danger';
+                tbody.innerHTML += `
+                    <tr>
+                        <td><a href="?p=${org.path}" target="_blank">${org.path}</a></td>
+                        <td>${org.name}</td>
+                        <td>${org.pass}</td>
+                        <td><span class="badge ${org.status === 'Active'?'bg-success':'bg-danger'}">${org.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm ${btnClass}" onclick="toggleStatus('${org.path}')">
+                                ${org.status === 'Active' ? 'Suspend' : 'Activate'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function toggleStatus(path) {
+            await callAPI({ action: 'toggleOrgStatus', targetOrgPath: path }, true);
+            loadAllOrgs();
+        }
+
+        // --- REGISTER ---
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await callAPI({
+                action: 'registerOrg',
+                orgPath: document.getElementById('regPath').value,
+                orgName: document.getElementById('regName').value,
+                password: document.getElementById('regPass').value
+            }, true);
+            
+            if(res.status === 'success') Swal.fire('สำเร็จ', 'สร้างองค์กรเรียบร้อย', 'success').then(()=>location.reload());
+            else Swal.fire('Error', res.message, 'error');
+        });
+
+        // --- UTILS ---
+        function applyTheme(data) {
+            document.documentElement.style.setProperty('--primary-color', data.themeColor || '#0d6efd');
+            document.getElementById('navOrgName').innerText = data.orgName;
+            document.getElementById('addressDisplay').innerText = data.address || '';
+            document.getElementById('paymentInfoDisplay').innerText = data.paymentInfo || '';
+        }
+
+        // ** API CALLER with LOADER **
+        async function callAPI(data, useLoader = false) {
+            const loader = document.getElementById('loader');
+            if(useLoader) loader.classList.remove('d-none');
+            
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(data)
+                });
+                const json = await response.json();
+                
+                if(useLoader) loader.classList.add('d-none');
+                return json;
+            } catch (err) {
+                if(useLoader) loader.classList.add('d-none');
+                console.error(err);
+                return { status: 'error', message: 'Connection Failed' };
+            }
+        }
+		
+		function checkShowTable() {
+			if(orgParam) {
+				(!sessionStorage.getItem("donation_user_"+orgParam) && orgData.showTable == false) ? document.getElementById("tableCard").style.display = "none" : document.getElementById("tableCard").style.display = "block";
+			}
+		}
+    </script>
+</body>
+</html>
