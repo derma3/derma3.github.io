@@ -79,6 +79,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="#" onclick="showSettingsModal()">ตั้งค่าองค์กร</a></li>
                                 <li><a class="dropdown-item" href="#" onclick="showMembersModal()">จัดการสมาชิก</a></li>
+								<li><a class="dropdown-item" href="#" onclick="downloadExcel()"><i class="fas fa-file-excel text-success"></i> ดาวน์โหลด Excel</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="#" onclick="logout()">ออกจากระบบ</a></li>
                             </ul>
@@ -619,6 +620,55 @@
 				(!sessionStorage.getItem("donation_user_"+orgParam) && orgData.showTable == false) ? document.getElementById("tableCard").style.display = "none" : document.getElementById("tableCard").style.display = "block";
 			}
 		}
+		
+		async function downloadExcel() {
+            // เช็คว่าเป็นแอดมินหรือไม่ (เพราะ Backend เราเขียนดักไว้ว่าต้องใช้ Password แอดมิน)
+            if (currentUser.role !== 'admin') {
+                Swal.fire('ไม่มีสิทธิ์', 'เฉพาะแอดมินองค์กรเท่านั้นที่ดาวน์โหลดได้', 'warning');
+                return;
+            }
+
+            // ถามยืนยันเพื่อความแน่ใจ (และอาจจะให้ใส่รหัสผ่านอีกครั้งถ้าต้องการความปลอดภัยสูง แต่นี่ใช้ token/session เดิม)
+            // หมายเหตุ: เราต้องส่ง password ไปให้ backend ตรวจสอบอีกครั้ง
+            // เนื่องจากใน session เราไม่ได้เก็บ password ไว้ (เพื่อความปลอดภัย)
+            // เราจะใช้วิธี Prompt ถามรหัสผ่าน หรือถ้าคุณมั่นใจใน Session จะแก้ backend ให้เช็ค token แทนก็ได้
+            // **แต่เพื่อให้ง่ายและปลอดภัยตาม Flow เดิม ผมจะให้ Prompt ถามรหัสผ่านยืนยันก่อนโหลด**
+            
+            const { value: password } = await Swal.fire({
+                title: 'ยืนยันรหัสผ่านแอดมิน',
+                text: 'เพื่อความปลอดภัย กรุณากรอกรหัสผ่านแอดมินองค์กรเพื่อดาวน์โหลด',
+                input: 'password',
+                showCancelButton: true
+            });
+
+            if (!password) return;
+
+            //showLoading(true); // โชว์หมุนๆ นานหน่อยเพราะไฟล์อาจจะใหญ่
+			document.getElementById('loader').classList.remove('d-none');
+
+            const res = await callAPI({ 
+                action: 'downloadExcel', 
+                orgPath: orgParam, 
+                password: password // ส่งรหัสไปยืนยันสิทธิ์
+            });
+
+            //showLoading(false);
+			document.getElementById('loader').classList.add('d-none');
+
+            if (res.status === 'success') {
+                // สร้าง Link ปลอมๆ เพื่อกดดาวน์โหลดไฟล์ Base64
+                const link = document.createElement('a');
+                link.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + res.base64;
+                link.download = res.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                Swal.fire('สำเร็จ', 'ดาวน์โหลดไฟล์เรียบร้อยแล้ว', 'success');
+            } else {
+                Swal.fire('ผิดพลาด', res.message, 'error');
+            }
+        }
     </script>
 </body>
 </html>
