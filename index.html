@@ -37,17 +37,19 @@
         <!-- 1. LANDING PAGE -->
         <div id="landing-page" class="container mt-5">
             <div class="text-center">
-                <h1 class="mb-4 text-primary"><i class="fas fa-donate"></i> ศูนย์รวมการรับบริจาค</h1>
+                <h1 class="mb-4 text-primary"><i class="fas fa-donate"></i> บริการระบบแสดงยอดบริจาคแบบเรียลไทม์ แชร์ลิ้งค์ดูได้ทันที</h1>
                 <div class="card card-shadow p-4 mx-auto" style="max-width: 500px;">
                     <h4>สร้างองค์กรใหม่</h4>
                     <form id="registerForm">
                         <div class="mb-2"><input type="text" class="form-control" id="regPath" placeholder="ชื่อลิงค์ (อังกฤษ)" required></div>
                         <div class="mb-2"><input type="text" class="form-control" id="regName" placeholder="ชื่อองค์กร" required></div>
+						<div class="mb-2"><input type="text" class="form-control" id="regEmail" placeholder="อีเมล์เพื่อรับข้อมูลการใช้งาน" required></div>
                         <div class="mb-2"><input type="password" class="form-control" id="regPass" placeholder="รหัส Admin" required></div>
                         <button type="submit" class="btn btn-primary w-100">ลงทะเบียน</button>
                     </form>
                     <hr>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="showSuperLogin()">เข้าสู่ระบบผู้ดูแลระบบ (Super Admin)</button>
+                    <button class="btn btn-outline-secondary btn-sm mb-2" onclick="showSuperLogin()">เข้าสู่ระบบผู้ดูแลระบบ (Super Admin)</button>
+                    <button class="btn btn-outline-warning btn-sm mb-2" onclick="window.open('https://derma3.github.io/index1.html', '_blank')">ต้องการระบบแจ้งยอดแบบเก่า?</button>
                 </div>
             </div>
         </div>
@@ -101,11 +103,13 @@
                 <div class="row mb-4">
                     <div class="col-md-8 mx-auto">
                         <div class="alert alert-light border text-center shadow-sm">
-                            <h6 class="fw-bold"><i class="fas fa-qrcode"></i> ช่องทางร่วมทำบุญ</h6>
+                            <h6 class="fw-bold"><i class="fas fa-qrcode"></i> ช่องทางร่วมบริจาค</h6>
                             <p id="paymentInfoDisplay" class="mb-0 text-pre-wrap small">Loading...</p>
                         </div>
                     </div>
                 </div>
+				
+				<center id="orgLink"></center>
 
                 <!-- Add Donation Form -->
                 <div id="recordArea" class="card card-shadow mb-4 no-print d-none">
@@ -179,8 +183,38 @@
         </div>
         <ul class="list-group" id="memberList"></ul>
     </div></div></div></div>
+	
+	<button type="button" class="btn btn-primary" id="liveToastBtn" hidden>Show live toast</button>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+      <img src="https://dun0077.github.io/abd21.png" class="rounded me-2" alt="..." width="30px">
+      <strong class="me-auto">ครูอับดุลเลาะ</strong>
+      <small>ข้อความแจ้งเตือน</small>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      เราได้คัดลอกลิ้งค์ไปยังคลิปบอร์ดเรียบร้อยแล้ว
+    </div>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const toastTrigger = document.getElementById('liveToastBtn')
+  const toastLiveExample = document.getElementById('liveToast')
+
+  if (toastTrigger) {
+    const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLiveExample)
+    toastTrigger.addEventListener('click', () => {
+      toastBootstrap.show()
+    })
+  }
+</script>
+
     <script>
         // *** แก้ URL APPS SCRIPT ของคุณที่นี่ ***
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymHW_vijiYj1mpa5OcpKLQrD5xpBHEXLTavAsqRkYUtRQ_WFIqZr5qZ8zIvWk5WAuO/exec";
@@ -388,7 +422,7 @@
                 document.getElementById('setColor').value = orgData.themeColor || '#0d6efd';
                 document.getElementById('setAddress').value = orgData.address || '';
                 document.getElementById('setPay').value = orgData.paymentInfo || '';
-                document.getElementById('setShowTable').checked = (String(orgData.showTable) != 'FALSE');
+                document.getElementById('setShowTable').checked = orgData.showTable == true ? true : false;
             } else {
                 document.getElementById('btnLogoutMember').classList.remove('d-none');
             }
@@ -578,6 +612,7 @@
                 action: 'registerOrg',
                 orgPath: document.getElementById('regPath').value,
                 orgName: document.getElementById('regName').value,
+				orgEmail: document.getElementById('regEmail').value,
                 password: document.getElementById('regPass').value
             }, true);
             
@@ -669,6 +704,20 @@
                 Swal.fire('ผิดพลาด', res.message, 'error');
             }
         }
+		
+		function copyLink(link) {
+			navigator.clipboard.writeText(link);
+			document.getElementById('liveToastBtn').click()
+		}
+		
+		if(orgParam) {
+			let webDomain = "https://derma3.github.io";
+			let orgDomain = document.getElementById("orgLink");
+			let linktext = `<b>ลิ้งค์เพื่อแชร์:</b><br>
+			<i class='fas fa-link'></i> ${webDomain}?p=${orgParam}`
+			orgDomain.innerHTML = linktext;
+			orgDomain.setAttribute("onclick",`copyLink('${webDomain}?p=${orgParam}')`)
+		} 
     </script>
 </body>
 </html>
