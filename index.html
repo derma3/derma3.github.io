@@ -165,6 +165,7 @@
     <!-- Settings Modal -->
     <div class="modal fade" id="settingsModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>ตั้งค่าองค์กร</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
         <form id="settingForm">
+            <label>ชื่อองค์กร/การบริจาค</label><input type="text" id="setName" class="form-control mb-2">
             <label>เปลี่ยนรหัส Admin (ว่างไว้ถ้าไม่เปลี่ยน)</label><input type="password" id="setPass" class="form-control mb-2">
             <label>สีธีม</label><input type="color" id="setColor" class="form-control form-control-color w-100 mb-2">
             <label>ที่อยู่/ท้ายกระดาษ</label><input type="text" id="setAddress" class="form-control mb-2">
@@ -418,6 +419,7 @@
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
                 
                 // Pre-fill Data for Settings Modal
+                document.getElementById('setName').value = orgData.orgName || '';
                 document.getElementById('setPass').value = '';
                 document.getElementById('setColor').value = orgData.themeColor || '#0d6efd';
                 document.getElementById('setAddress').value = orgData.address || '';
@@ -444,6 +446,7 @@
             const payload = {
                 action: 'updateOrgSettings',
                 orgPath: orgParam,
+                orgName: document.getElementById('setName').value,
                 newPass: document.getElementById('setPass').value,
                 themeColor: document.getElementById('setColor').value,
                 address: document.getElementById('setAddress').value,
