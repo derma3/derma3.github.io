@@ -616,7 +616,7 @@
                 orgPath: document.getElementById('regPath').value,
                 orgName: document.getElementById('regName').value,
 				orgEmail: document.getElementById('regEmail').value,
-                password: document.getElementById('regPass').value
+                password: "'"+document.getElementById('regPass').value
             }, true);
             
             if(res.status === 'success') Swal.fire('สำเร็จ', 'สร้างองค์กรเรียบร้อย', 'success').then(()=>location.reload());
